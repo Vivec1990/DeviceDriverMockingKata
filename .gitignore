@@ -1,2 +1,5 @@
 */**/ignore*
 */**/Ignore*
+.idea
+**/build
+**/.gradle
