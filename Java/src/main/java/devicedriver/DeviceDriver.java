@@ -19,9 +19,11 @@ public class DeviceDriver {
   private static final byte PROTECTED_BLOCK_ERROR_MASK = 0x08;
 
   private final FlashMemoryDevice hardware;
+  private final DeviceClock clock;
 
-  public DeviceDriver(FlashMemoryDevice hardware) {
+  public DeviceDriver(FlashMemoryDevice hardware, final DeviceClock clock) {
     this.hardware = hardware;
+    this.clock = clock;
   }
 
   public byte read(long address) {
@@ -29,7 +31,7 @@ public class DeviceDriver {
   }
 
   public void write(long address, byte data) {
-    long start = System.nanoTime();
+    long start = clock.nanoTime();
     hardware.write(INIT_ADDRESS, PROGRAM_COMMAND);
     hardware.write(address, data);
     byte readyByte;
@@ -46,7 +48,7 @@ public class DeviceDriver {
           throw new ProtectedBlockException();
         }
       }
-      if (System.nanoTime() - start > TIMEOUT_THRESHOLD) {
+      if (clock.nanoTime() - start > TIMEOUT_THRESHOLD) {
         throw new TimeoutException("Timeout when trying to read data from memory");
       }
     }

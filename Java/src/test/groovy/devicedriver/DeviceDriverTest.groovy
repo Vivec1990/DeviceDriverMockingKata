@@ -11,10 +11,13 @@ class DeviceDriverTest extends Specification {
     def address = 1000
     def data = 0x22
 
+    DeviceClock clock = Mock()
+    FlashMemoryDevice hardware = Mock()
+
     def "read from hardware"() {
         given:
-        FlashMemoryDevice hardware = Mock()
-        def driver = new DeviceDriver(hardware)
+
+        def driver = new DeviceDriver(hardware, clock)
 
         when:
         def data = driver.read(0xFF)
@@ -27,7 +30,7 @@ class DeviceDriverTest extends Specification {
     def "write to vpp protected range"() {
         given:
         FlashMemoryDevice hardware = Mock()
-        def driver = new DeviceDriver(hardware)
+        def driver = new DeviceDriver(hardware, clock)
 
         when:
         driver.write(address, (byte) data)
@@ -42,7 +45,7 @@ class DeviceDriverTest extends Specification {
     def "write encounters an internal error"() {
         given:
         FlashMemoryDevice hardware = Mock()
-        def driver = new DeviceDriver(hardware)
+        def driver = new DeviceDriver(hardware, clock)
 
         when:
         driver.write(address, (byte) data)
@@ -57,10 +60,10 @@ class DeviceDriverTest extends Specification {
     def "write to protected block"() {
         given:
         FlashMemoryDevice hardware = Mock()
-        def driver = new DeviceDriver(hardware)
+        def driver = new DeviceDriver(hardware, clock)
 
         when:
-        driver.write(address,(byte) data)
+        driver.write(address, (byte) data)
 
         then:
         1 * hardware.write(INIT_ADDRESS, PROGRAM_COMMAND)
@@ -72,10 +75,10 @@ class DeviceDriverTest extends Specification {
     def "write encounters read failure"() {
         given:
         FlashMemoryDevice hardware = Mock()
-        def driver = new DeviceDriver(hardware)
+        def driver = new DeviceDriver(hardware, clock)
 
         when:
-        driver.write(address,(byte) data)
+        driver.write(address, (byte) data)
 
         then:
         1 * hardware.write(INIT_ADDRESS, PROGRAM_COMMAND)
@@ -85,13 +88,29 @@ class DeviceDriverTest extends Specification {
         thrown ReadFailureException
     }
 
+    def "write has a timout"() {
+        given:
+        FlashMemoryDevice hardware = Mock()
+        def driver = new DeviceDriver(hardware, clock)
+
+        when:
+        driver.write(address, (byte) data)
+
+        then:
+        1 * hardware.write(INIT_ADDRESS, PROGRAM_COMMAND)
+        1 * hardware.write(address, data)
+        1 * hardware.read(INIT_ADDRESS) >> 0x00
+        2 * clock.nanoTime() >> 0 >> 200_000_000
+        thrown TimeoutException
+    }
+
     def "write is successful"() {
         given:
         FlashMemoryDevice hardware = Mock()
-        def driver = new DeviceDriver(hardware)
+        def driver = new DeviceDriver(hardware, clock)
 
         when:
-        driver.write(address,(byte) data)
+        driver.write(address, (byte) data)
 
         then:
         1 * hardware.write(INIT_ADDRESS, PROGRAM_COMMAND)
