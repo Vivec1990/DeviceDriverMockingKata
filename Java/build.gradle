@@ -15,8 +15,13 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.spockframework:spock-core:2.4-M1-groovy-4.0'
     testImplementation 'org.apache.groovy:groovy:4.0.11'
+    testImplementation 'io.github.joke:spock-mockable:2.3.0'
 }
 
 test {
     useJUnitPlatform()
+}
+
+tasks.withType(Test) {
+    jvmArgs += ["-javaagent:${classpath.find { it.name.contains('spock-mockable') }.absolutePath}"]
 }
